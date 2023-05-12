@@ -28,6 +28,8 @@ namespace VxLite
     ctx(sbs* _space);
     ~ctx();
     void OptimizeFilters();
+    void FilterSpace();
+    void UnfilterSpace();
   private:
     sbs* space;
     uint8_t* filters;
