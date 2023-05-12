@@ -10,8 +10,13 @@ namespace VxLite
   struct sbs
   {
     sbs();
-    sbs(const size_t _xs, const size_t _ys, const size_t _zs, const size_t _bpv);
+    sbs(const uint64_t _xs, const uint64_t _ys, const uint64_t _zs, const uint64_t _bpv);
     ~sbs();
+
+    constexpr uint8_t& at(const uint64_t x, const uint64_t y, const uint64_t z, const uint64_t offset)
+    {
+      return *(data + (z*xs*ys + y*xs + x)*bpv + offset);
+    }
 
     uint64_t xs;
     uint64_t ys;
@@ -30,9 +35,10 @@ namespace VxLite
     void OptimizeFilters();
     void FilterSpace();
     void UnfilterSpace();
-  private:
+
     sbs* space;
     uint8_t* filters;
+  private:
   };
 
   // A VxLite compressed space (.vls file) is a vls file header followed by compressed filter data, and then compressed voxel data.
