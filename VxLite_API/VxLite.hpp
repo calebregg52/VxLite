@@ -10,6 +10,7 @@ namespace VxLite
   struct sbs
   {
     sbs();
+    sbs(const sbs& _s);
     sbs(const uint64_t _xs, const uint64_t _ys, const uint64_t _zs, const uint64_t _bpv);
     ~sbs();
 
@@ -21,9 +22,10 @@ namespace VxLite
 
     constexpr uint8_t get(const uint64_t x, const uint64_t y, const uint64_t z, const uint64_t offset)
     {
-      if(x < 0 || x >= xs) return 0;
-      if(y < 0 || y >= ys) return 0;
-      if(z < 0 || z >= zs) return 0;
+      if(x >= xs) return 0;
+      if(y >= ys) return 0;
+      if(z >= zs) return 0;
+      if(offset >= bpv) return 0;
       return at(x, y, z, offset);
     }
 
