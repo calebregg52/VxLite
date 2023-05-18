@@ -155,9 +155,10 @@ void VxLite::ctx::OptimizeFilters()
 {
   std::cout<<"Using "<<FILTERS_CNT<<" filters"<<std::endl;
   for(int64_t z = space->zs-1; z >= 0; z--)
+  {
     for(int64_t y = space->ys-1; y >= 0; y--)
     {
-      uint64_t bestSum = -1;
+      uint64_t bestSum = ~0ull;
       uint8_t bestFilter = 0;
       for(int f = 0; f < FILTERS_CNT; ++f)
       {
@@ -167,8 +168,9 @@ void VxLite::ctx::OptimizeFilters()
           for(int64_t b = space->bpv-1; b >= 0; b--)
           {
             //std::cout<<"Filtering "<<x<<", "<<y<<", "<<z<<", "<<b<<std::endl;
-            sum += abs(space->at(x, y, z, b) - predictionFilters[f](space, x, y, z, b));
+            sum += __builtin_popcount((space->at(x, y, z, b) - predictionFilters[f](space, x, y, z, b)));
           }
+          if(sum > bestSum) break;
         }
         //std::cout<<"Sum is "<<sum<<std::endl;
         if(sum < bestSum)
@@ -180,4 +182,79 @@ void VxLite::ctx::OptimizeFilters()
       //std::cout<<"Best filter for "<<z<<", "<<y<<" was "<<(int)bestFilter<<" with sum "<<bestSum<<std::endl;
       filters[z*space->ys+y] = bestFilter;
     }
+  }
+}
+
+void VxLite::ctx::OptimizeFilters2()
+{
+  std::cout<<"Using "<<FILTERS_CNT<<" filters"<<std::endl;
+  for(int64_t z = space->zs-1; z >= 0; z--)
+  {
+    uint8_t lastBest = 0;
+    for(int64_t y = space->ys-1; y >= 0; y--)
+    {
+      uint64_t bestSum = ~0ull;
+      uint8_t bestFilter = lastBest;
+      for(int f = 0; f < FILTERS_CNT; ++f)
+      {
+        uint64_t sum = 0;
+        for(int64_t x = space->xs-1; x >= 0; x--)
+        {
+          for(int64_t b = space->bpv-1; b >= 0; b--)
+          {
+            //std::cout<<"Filtering "<<x<<", "<<y<<", "<<z<<", "<<b<<std::endl;
+            sum += __builtin_popcount((space->at(x, y, z, b) - predictionFilters[(f+lastBest) % FILTERS_CNT](space, x, y, z, b)));
+          }
+          if(sum > bestSum) break;
+        }
+        //std::cout<<"Sum is "<<sum<<std::endl;
+        if(sum < bestSum)
+        {
+          bestSum = sum;
+          bestFilter = (f+lastBest) % FILTERS_CNT;
+        }
+      }
+      //std::cout<<"Best filter for "<<z<<", "<<y<<" was "<<(int)bestFilter<<" with sum "<<bestSum<<std::endl;
+      filters[z*space->ys+y] = lastBest = bestFilter;
+    }
+  }
+}
+
+void VxLite::ctx::Compress(VxLite::vls_file& infile)
+{
+  if(infile.CompressedSpaceData != nullptr) free(infile.CompressedSpaceData);
+  if(infile.CompressedFilterData != nullptr) free(infile.CompressedFilterData);
+
+  const size_t sbsBoundSize = LZ4_compressBound(space->xs*space->ys*space->zs*space->bpv);
+  infile.CompressedSpaceData = (uint8_t*) malloc(sbsBoundSize);
+  const size_t sbsCompSize = LZ4_compress_HC((const char*)space->data, (char*)infile.CompressedSpaceData, space->xs*space->ys*space->zs*space->bpv, sbsBoundSize, 10);
+  infile.CompressedSpaceData = (uint8_t*) realloc(infile.CompressedSpaceData, sbsCompSize);
+  infile.CompressedSpaceDataSize = sbsCompSize;
+
+  const size_t filterBoundSize = LZ4_compressBound(space->ys*space->zs);
+  infile.CompressedFilterData = (uint8_t*) malloc(filterBoundSize);
+  const size_t filterCompSize = LZ4_compress_HC((const char*)filters, (char*)infile.CompressedFilterData, space->ys*space->zs, filterBoundSize, 12);
+  infile.CompressedFilterData = (uint8_t*) realloc(infile.CompressedFilterData, filterCompSize);
+  infile.CompressedFilterDataSize = filterCompSize;
+
+  infile.xs = space->xs;
+  infile.ys = space->ys;
+  infile.zs = space->zs;
+  infile.bpv = space->bpv;
+}
+
+void VxLite::ctx::Decompress(const VxLite::vls_file& infile)
+{
+  space->xs = infile.xs;
+  space->ys = infile.ys;
+  space->zs = infile.zs;
+  space->bpv = infile.bpv;
+
+  if(space->data != nullptr) delete[] space->data;
+  space->data = new uint8_t[infile.xs*infile.ys*infile.zs*infile.bpv];
+  if(filters != nullptr) delete[] filters;
+  filters = new uint8_t[infile.ys*infile.zs];
+
+  LZ4_decompress_fast((const char*)infile.CompressedSpaceData, (char*)space->data, infile.xs*infile.ys*infile.zs*infile.bpv);
+  LZ4_decompress_fast((const char*)infile.CompressedFilterData, (char*)filters, infile.ys*infile.zs);
 }

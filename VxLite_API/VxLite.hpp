@@ -36,24 +36,6 @@ namespace VxLite
     uint8_t* data;
   };
 
-  // A compression context contains a pointer to a sparse bytespace and a collection of filters for each line of bytes along the X-axis.
-  class ctx
-  {
-  public:
-    ctx();
-    ctx(sbs* _space);
-    ~ctx();
-
-    // TODO: filter application and optimization
-    void OptimizeFilters();
-    void FilterSpace();
-    void UnfilterSpace();
-
-    sbs* space;
-    uint8_t* filters;
-  private:
-  };
-
   // A VxLite compressed space (.vls file) is a vls file header followed by compressed filter data, and then compressed voxel data.
   struct vls_file
   {
@@ -68,9 +50,25 @@ namespace VxLite
     uint8_t* CompressedSpaceData;
   };
 
-  // TODO: Buffer-level compression and decompression
-  vls_file CompressBytespace(uint8_t* in, const size_t _xs, const size_t _ys, const size_t _zs, const size_t _bpv);
-  void DecompressBytespace(uint8_t* out, vls_file& f);
+  // A compression context contains a pointer to a sparse bytespace and a collection of filters for each line of bytes along the X-axis.
+  class ctx
+  {
+  public:
+    ctx();
+    ctx(sbs* _space);
+    ~ctx();
+
+    void OptimizeFilters();
+    void OptimizeFilters2();
+    void FilterSpace();
+    void UnfilterSpace();
+    void Compress(vls_file&);
+    void Decompress(const vls_file&);
+
+    sbs* space;
+    uint8_t* filters;
+  private:
+  };
 }
 
 #endif
