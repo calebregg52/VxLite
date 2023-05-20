@@ -214,7 +214,7 @@ void VxLite::ctx::OptimizeFilters()
         uint64_t sum = 0;
         for(int64_t x = space->xs-1; x >= 0; x--)
         {
-          for(int64_t b = space->bpv-1; b >= 0; b--)
+          for(int64_t b = space->bpv-1; b >= 0 && sum < bestSum; b--)
           {
             // The method used to consider the "cost" of a filter's error is worthy of study.
             // Set-bits count of arithmetic difference is an arbitrary choice; This could just as easily
@@ -223,7 +223,6 @@ void VxLite::ctx::OptimizeFilters()
             //sum += __builtin_popcount((space->at(x, y, z, b) - predictionFilters[(f+lastBest) % FILTERS_CNT](space, x, y, z, b)));
             sum += abs((space->at(x, y, z, b) - predictionFilters[(f+lastBest) % FILTERS_CNT](space, x, y, z, b)));
           }
-          if(sum > bestSum) break; // Not the best filter.
         }
         if(sum < bestSum)
         {
