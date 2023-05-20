@@ -1,3 +1,18 @@
+//     This file is part of VxLite.
+//
+//     VxLite is free software: you can redistribute it and/or modify
+//     it under the terms of the Lesser GNU General Public License as published by
+//     the Free Software Foundation, either version 3 of the License, or
+//     (at your option) any later version.
+//
+//     VxLite is distributed in the hope that it will be useful,
+//     but WITHOUT ANY WARRANTY; without even the implied warranty of
+//     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//     Lesser GNU General Public License for more details.
+//
+//     You should have received a copy of the Lesser GNU General Public License
+//     along with VxLite. If not, see <http://www.gnu.org/licenses/>.
+
 #ifndef VXLITE_INCLUDED
 #define VXLITE_INCLUDED
 
@@ -58,8 +73,8 @@ namespace VxLite
     ctx(sbs* _space);
     ~ctx();
 
+    void OptimizeFilters_old();
     void OptimizeFilters();
-    void OptimizeFilters2();
     void FilterSpace();
     void UnfilterSpace();
     void Compress(vls_file&);
