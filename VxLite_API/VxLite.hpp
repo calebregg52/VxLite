@@ -27,7 +27,10 @@ namespace VxLite
     sbs();
     sbs(const sbs& _s);
     sbs(const uint64_t _xs, const uint64_t _ys, const uint64_t _zs, const uint64_t _bpv);
-    ~sbs();
+
+    sbs(const size_t _xs, const size_t _ys, const size_t _zs, const size_t _bpv);
+
+      ~sbs();
 
     // `at()` accesses the byte at the (x, y, z) voxel with `offset` relative to the voxel.
     constexpr uint8_t& at(const uint64_t x, const uint64_t y, const uint64_t z, const uint64_t offset)
