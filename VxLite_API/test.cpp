@@ -27,7 +27,7 @@
 int main()
 {
   srand(time(0));
-  VxLite::sbs s(128, 128, 128, 32);
+  VxLite::sbs s(64, 32, 96, 32);
   const uint64_t bytes = s.xs*s.ys*s.zs*s.bpv;
   std::cout<<"Allocated space of "<<double(bytes)/(1024*1024)<<" MB"<<std::endl;
   std::cout<<"Created bytespace of size "<<s.xs<<" by "<<s.ys<<" by "<<s.zs<<std::endl;
@@ -66,10 +66,10 @@ int main()
 
   std::cout<<"Optimized filters for line sums"<<std::endl<<std::endl;
 
-  VxLite::vls_file file = {0, 0, 0, 0, 0, 0, nullptr, nullptr};
+  VxLite::vls_file* file = new VxLite::vls_file({0, 0, 0, 0, 0, 0, nullptr, nullptr});
   std::cout<<"Compressing unfiltered data..."<<std::endl;
-  context.Compress(file);
-  std::cout<<"Compressed bytespace to "<<file.CompressedSpaceDataSize<<" bytes before filtering"<<std::endl<<std::endl;
+  context.Compress(*file);
+  std::cout<<"Compressed bytespace to "<<file->CompressedSpaceDataSize<<" bytes before filtering"<<std::endl<<std::endl;
 
   std::cout<<"Filtering raw bytespace data..."<<std::endl;
   context.FilterSpace();
@@ -87,9 +87,11 @@ int main()
   //   std::cout<<std::endl;
   // }
   std::cout<<"Compressing filtered data..."<<std::endl;
-  context.Compress(file);
-  std::cout<<"Compressed bytespace to "<<file.CompressedSpaceDataSize<<" bytes after filtering"<<std::endl<<std::endl;
-  std::cout<<"Total size is "<<file.CompressedSpaceDataSize+file.CompressedFilterDataSize<<" bytes after filtering"<<std::endl<<std::endl;
+  context.Compress(*file);
+  std::cout<<"Compressed bytespace to "<<file->CompressedSpaceDataSize<<" bytes after filtering"<<std::endl<<std::endl;
+  std::cout<<"Total size is "<<file->CompressedSpaceDataSize+file->CompressedFilterDataSize<<" bytes after filtering"<<std::endl<<std::endl;
+
+  VxLite::SaveToFile(*file, "test.vls");
 
   // Destroy the original data
   for(size_t z = 0; z < s.zs; z++)
@@ -107,8 +109,12 @@ int main()
     //std::cout<<std::endl;
   }
 
+  delete[] file->CompressedSpaceData;
+  delete[] file->CompressedFilterData;
+  file = VxLite::OpenFromFile("test.vls");
+
   std::cout<<"Testing decompression..."<<std::endl;
-  context.Decompress(file);
+  context.Decompress(*file);
   std::cout<<"Decompressed bytespace and filters."<<std::endl<<std::endl;
   std::cout<<"Unfiltering raw bytespace data..."<<std::endl;
   context.UnfilterSpace();
@@ -143,7 +149,5 @@ int main()
     }
   }
   std::cout<<"Completed verification"<<std::endl;
-  if(file.CompressedSpaceData != nullptr) free(file.CompressedSpaceData);
-  if(file.CompressedFilterData != nullptr) free(file.CompressedFilterData);
   return 0;
 }

@@ -77,7 +77,7 @@ namespace VxLite
   // Return a pointer to a loaded vls_file from disk.
   static vls_file* OpenFromFile(const std::string& filename)
   {
-    vls_file* ret = new vls_file();
+    vls_file* ret = new vls_file;
     std::ifstream infile(filename, std::ios::binary);
     if(!infile.is_open()) return nullptr;
 
@@ -87,48 +87,42 @@ namespace VxLite
     ret->xs = 0;
     for(int i = 0; i < 8; i++)
     {
-      ret->xs |= buf[i];
-      ret->xs <<= 8;
+      ret->xs |= (uint64_t(buf[i]) << (i*8));
     }
 
     infile.read(buf, 8);
     ret->ys = 0;
     for(int i = 0; i < 8; i++)
     {
-      ret->ys |= buf[i];
-      ret->ys <<= 8;
+      ret->ys |= (uint64_t(buf[i]) << (i*8));
     }
 
     infile.read(buf, 8);
     ret->zs = 0;
     for(int i = 0; i < 8; i++)
     {
-      ret->zs |= buf[i];
-      ret->zs <<= 8;
+      ret->zs |= (uint64_t(buf[i]) << (i*8));
     }
 
     infile.read(buf, 8);
     ret->bpv = 0;
     for(int i = 0; i < 8; i++)
     {
-      ret->bpv |= buf[i];
-      ret->bpv <<= 8;
+      ret->bpv |= (uint64_t(buf[i]) << (i*8));
     }
 
     infile.read(buf, 8);
     ret->CompressedFilterDataSize = 0;
     for(int i = 0; i < 8; i++)
     {
-      ret->CompressedFilterDataSize |= buf[i];
-      ret->CompressedFilterDataSize <<= 8;
+      ret->CompressedFilterDataSize |= (uint64_t(buf[i]) << (i*8));
     }
 
     infile.read(buf, 8);
     ret->CompressedSpaceDataSize = 0;
     for(int i = 0; i < 8; i++)
     {
-      ret->CompressedSpaceDataSize |= buf[i];
-      ret->CompressedSpaceDataSize <<= 8;
+      ret->CompressedSpaceDataSize |= (uint64_t(buf[i]) << (i*8));
     }
 
     ret->CompressedFilterData = new uint8_t[ret->CompressedFilterDataSize];
@@ -143,43 +137,43 @@ namespace VxLite
   // Save a vls_file instance to disk.
   static void SaveToFile(const vls_file& file, const std::string filename)
   {
-    std::ofstream outfile(filename, std::ios::binary);
+    std::ofstream outfile(filename, std::ofstream::out);
     if(!outfile.is_open()) return;
 
-    char buf[8];
+    char* buf = new char[8];
     for(int i = 0; i < 8; i++)
     {
-      buf[7-i] = char(file.xs >> (i*8));
+      buf[i] = uint8_t(file.xs >> (i*8));
     }
     outfile.write(buf, 8);
 
     for(int i = 0; i < 8; i++)
     {
-      buf[7-i] = char(file.ys >> (i*8));
+      buf[i] = uint8_t(file.ys >> (i*8));
     }
     outfile.write(buf, 8);
 
     for(int i = 0; i < 8; i++)
     {
-      buf[7-i] = char(file.zs >> (i*8));
+      buf[i] = uint8_t(file.zs >> (i*8));
     }
     outfile.write(buf, 8);
 
     for(int i = 0; i < 8; i++)
     {
-      buf[7-i] = char(file.bpv >> (i*8));
+      buf[i] = uint8_t(file.bpv >> (i*8));
     }
     outfile.write(buf, 8);
 
     for(int i = 0; i < 8; i++)
     {
-      buf[7-i] = char(file.CompressedFilterDataSize >> (i*8));
+      buf[i] = uint8_t(file.CompressedFilterDataSize >> (i*8));
     }
     outfile.write(buf, 8);
 
     for(int i = 0; i < 8; i++)
     {
-      buf[7-i] = char(file.CompressedSpaceDataSize >> (i*8));
+      buf[i] = uint8_t(file.CompressedSpaceDataSize >> (i*8));
     }
     outfile.write(buf, 8);
 

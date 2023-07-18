@@ -257,7 +257,6 @@ void VxLite::ctx::Compress(VxLite::vls_file& infile)
   const size_t filterCompSize = LZ4_compress_HC((const char*)filters, (char*)infile.CompressedFilterData, space->ys*space->zs, filterBoundSize, 12);
   infile.CompressedFilterData = (uint8_t*) realloc(infile.CompressedFilterData, filterCompSize);
   infile.CompressedFilterDataSize = filterCompSize;
-
   infile.xs = space->xs;
   infile.ys = space->ys;
   infile.zs = space->zs;
