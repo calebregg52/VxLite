@@ -16,14 +16,6 @@
 #include "VxLite.hpp"
 #include <chrono>
 
-//where are you inputting files at ?
-// The vls_file structure doesn't actually do anything with file I/O directly. It's just a skeleton to dump the bytes
-// of the file into
-
-//thats an issue if we want a gui that can i/o files
-// File I/O is pretty trivial to do in C++ from my side, the difference between what we have now and
-// a openFromFile() function is ~20 lines of code
-
 int main()
 {
   srand(time(0));
