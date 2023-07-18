@@ -17,6 +17,7 @@
 #define VXLITE_INCLUDED
 
 #include <iostream>
+#include <fstream>
 #include <cstdint>
 
 namespace VxLite
@@ -64,9 +65,129 @@ namespace VxLite
 
     uint64_t CompressedFilterDataSize;
     uint64_t CompressedSpaceDataSize;
-    uint8_t* CompressedFilterData;
-    uint8_t* CompressedSpaceData;
+    uint8_t* CompressedFilterData = nullptr;
+    uint8_t* CompressedSpaceData = nullptr;
+    ~vls_file()
+    {
+      if(CompressedFilterData != nullptr) delete[] CompressedFilterData;
+      if(CompressedSpaceData != nullptr) delete[] CompressedSpaceData;
+    }
   };
+
+  // Return a pointer to a loaded vls_file from disk.
+  static vls_file* OpenFromFile(const std::string& filename)
+  {
+    vls_file* ret = new vls_file();
+    std::ifstream infile(filename, std::ios::binary);
+    if(!infile.is_open()) return nullptr;
+
+    char buf[8];
+
+    infile.read(buf, 8);
+    ret->xs = 0;
+    for(int i = 0; i < 8; i++)
+    {
+      ret->xs |= buf[i];
+      ret->xs <<= 8;
+    }
+
+    infile.read(buf, 8);
+    ret->ys = 0;
+    for(int i = 0; i < 8; i++)
+    {
+      ret->ys |= buf[i];
+      ret->ys <<= 8;
+    }
+
+    infile.read(buf, 8);
+    ret->zs = 0;
+    for(int i = 0; i < 8; i++)
+    {
+      ret->zs |= buf[i];
+      ret->zs <<= 8;
+    }
+
+    infile.read(buf, 8);
+    ret->bpv = 0;
+    for(int i = 0; i < 8; i++)
+    {
+      ret->bpv |= buf[i];
+      ret->bpv <<= 8;
+    }
+
+    infile.read(buf, 8);
+    ret->CompressedFilterDataSize = 0;
+    for(int i = 0; i < 8; i++)
+    {
+      ret->CompressedFilterDataSize |= buf[i];
+      ret->CompressedFilterDataSize <<= 8;
+    }
+
+    infile.read(buf, 8);
+    ret->CompressedSpaceDataSize = 0;
+    for(int i = 0; i < 8; i++)
+    {
+      ret->CompressedSpaceDataSize |= buf[i];
+      ret->CompressedSpaceDataSize <<= 8;
+    }
+
+    ret->CompressedFilterData = new uint8_t[ret->CompressedFilterDataSize];
+    ret->CompressedSpaceData = new uint8_t[ret->CompressedSpaceDataSize];
+
+    infile.read((char*)ret->CompressedFilterData, ret->CompressedFilterDataSize);
+    infile.read((char*)ret->CompressedSpaceData, ret->CompressedSpaceDataSize);
+
+    return ret;
+  }
+
+  // Save a vls_file instance to disk.
+  static void SaveToFile(const vls_file& file, const std::string filename)
+  {
+    std::ofstream outfile(filename, std::ios::binary);
+    if(!outfile.is_open()) return;
+
+    char buf[8];
+    for(int i = 0; i < 8; i++)
+    {
+      buf[7-i] = char(file.xs >> (i*8));
+    }
+    outfile.write(buf, 8);
+
+    for(int i = 0; i < 8; i++)
+    {
+      buf[7-i] = char(file.ys >> (i*8));
+    }
+    outfile.write(buf, 8);
+
+    for(int i = 0; i < 8; i++)
+    {
+      buf[7-i] = char(file.zs >> (i*8));
+    }
+    outfile.write(buf, 8);
+
+    for(int i = 0; i < 8; i++)
+    {
+      buf[7-i] = char(file.bpv >> (i*8));
+    }
+    outfile.write(buf, 8);
+
+    for(int i = 0; i < 8; i++)
+    {
+      buf[7-i] = char(file.CompressedFilterDataSize >> (i*8));
+    }
+    outfile.write(buf, 8);
+
+    for(int i = 0; i < 8; i++)
+    {
+      buf[7-i] = char(file.CompressedSpaceDataSize >> (i*8));
+    }
+    outfile.write(buf, 8);
+
+    outfile.write((char*)file.CompressedFilterData, file.CompressedFilterDataSize);
+    outfile.write((char*)file.CompressedSpaceData, file.CompressedSpaceDataSize);
+
+    outfile.close();
+  }
 
   // A compression context contains a pointer to a sparse bytespace and a collection of filters for each line of bytes along the X-axis.
   class ctx
