@@ -26,7 +26,7 @@ namespace VxLite
   {
     sbs();
     sbs(const sbs& _s);
-    sbs(const uint64_t _xs, const uint64_t _ys, const uint64_t _zs, const uint64_t _bpv);
+    //sbs(const uint64_t _xs, const uint64_t _ys, const uint64_t _zs, const uint64_t _bpv);
 
     sbs(const size_t _xs, const size_t _ys, const size_t _zs, const size_t _bpv);
 
