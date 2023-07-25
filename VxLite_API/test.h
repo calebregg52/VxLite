@@ -4,9 +4,8 @@
 #include <QString>
 #include <QWidget>
 
-class Test : QWidget
+class Test
 {
-    Q_OBJECT
 public:
 
     Test();
