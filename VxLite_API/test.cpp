@@ -15,12 +15,28 @@
 
 #include "VxLite.hpp"
 #include <chrono>
+#include "test.h"
+#include "mainwindow.h"
 
-int main()
+/*
+Test::Test()
+{
+
+}
+
+Test::~Test()
+{
+
+}
+*/
+
+void Test::VxLiteTest()
 {
   srand(time(0));
   VxLite::sbs s(64, 32, 96, 32);
   const uint64_t bytes = s.xs*s.ys*s.zs*s.bpv;
+
+
   std::cout<<"Allocated space of "<<double(bytes)/(1024*1024)<<" MB"<<std::endl;
   std::cout<<"Created bytespace of size "<<s.xs<<" by "<<s.ys<<" by "<<s.zs<<std::endl;
   std::cout<<"Each voxel is "<<s.bpv<<" byte(s)"<<std::endl;
@@ -141,5 +157,16 @@ int main()
     }
   }
   std::cout<<"Completed verification"<<std::endl;
-  return 0;
-}
+  }
+
+
+  void onPrint(QString message)
+  {
+
+  }
+
+  void onClear()
+  {
+
+  }
+
