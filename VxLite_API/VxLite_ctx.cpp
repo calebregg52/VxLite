@@ -15,6 +15,7 @@
 
 #include "VxLite.hpp"
 #include "lz4hc.h"
+#include "lz4.c"
 
 VxLite::ctx::ctx()
 {
