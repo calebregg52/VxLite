@@ -19,7 +19,7 @@
 int main()
 {
   srand(time(0));
-  VxLite::sbs s(64, 32, 96, 32);
+  VxLite::sbs s(128, 128, 96, 32);
   const uint64_t bytes = s.xs*s.ys*s.zs*s.bpv;
   std::cout<<"Allocated space of "<<double(bytes)/(1024*1024)<<" MB"<<std::endl;
   std::cout<<"Created bytespace of size "<<s.xs<<" by "<<s.ys<<" by "<<s.zs<<std::endl;

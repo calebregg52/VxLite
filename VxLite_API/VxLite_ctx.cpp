@@ -169,7 +169,7 @@ void VxLite::ctx::UnfilterSpace()
 
 void VxLite::ctx::OptimizeFilters_old()
 {
-  std::cout<<"Using "<<FILTERS_CNT<<" filters"<<std::endl;
+  //std::cout<<"Using "<<FILTERS_CNT<<" filters"<<std::endl;
   for(int64_t z = space->zs-1; z >= 0; z--)
   {
     for(int64_t y = space->ys-1; y >= 0; y--)
@@ -200,7 +200,7 @@ void VxLite::ctx::OptimizeFilters_old()
 
 void VxLite::ctx::OptimizeFilters()
 {
-  std::cout<<"Using "<<FILTERS_CNT<<" filters"<<std::endl;
+  //std::cout<<"Using "<<FILTERS_CNT<<" filters"<<std::endl;
   for(int64_t z = space->zs-1; z >= 0; z--)
   {
     uint8_t lastBest = 0;
@@ -244,10 +244,15 @@ void VxLite::ctx::Compress(VxLite::vls_file& infile)
 
   // Make a buffer big enough to handle all of it.
   // TODO: Handle very large but easy to compress bytespaces better
-  const size_t sbsBoundSize = LZ4_compressBound(space->xs*space->ys*space->zs*space->bpv);
+  const int64_t sbsBoundSize = LZ4_compressBound(space->xs*space->ys*space->zs*space->bpv);
   infile.CompressedSpaceData = (uint8_t*) malloc(sbsBoundSize);
   // Keep track of the size, and free whatever we don't need after compression
-  const size_t sbsCompSize = LZ4_compress_HC((const char*)space->data, (char*)infile.CompressedSpaceData, space->xs*space->ys*space->zs*space->bpv, sbsBoundSize, 10);
+  const int64_t sbsCompSize = LZ4_compress_HC((const char*)space->data, (char*)infile.CompressedSpaceData, space->xs*space->ys*space->zs*space->bpv, sbsBoundSize, 10);
+  if(sbsCompSize < 0)
+  {
+    std::cout<<"LZ4 compression error!"<<std::endl;
+    return;
+  }
   infile.CompressedSpaceData = (uint8_t*) realloc(infile.CompressedSpaceData, sbsCompSize);
   infile.CompressedSpaceDataSize = sbsCompSize;
 
