@@ -4,11 +4,12 @@
 //#include "test.h"
 #include <VxLite.hpp>
 
-#include<QFile>
+#include <QFile>
 #include <QFileDialog>
 #include <QTextStream>
 #include <QMessageBox>
 #include <QDesktopServices>
+#include <SFML/Graphics.hpp>
 
 #include <iostream>
 
@@ -25,6 +26,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->CompressButton, &QPushButton::released, this, &MainWindow::onCompress);
     connect(ui->DecompressButton, &QPushButton::released, this, &MainWindow::onDecompress);
+
+    connect(ui->ExportPNGButton, &QPushButton::released, this, &MainWindow::onExportPNGs);
+
+    connect(ui->clearButton, &QPushButton::released, this, &MainWindow::clearFiles);
 
 
 
@@ -148,6 +153,16 @@ void MainWindow::on_actionSaveAs()
 }
 
 
+void MainWindow::clearFiles()
+{
+    filenameSave.clear();
+    ui->OpenFileText->clear();
+    filenameOpen.clear();
+    ui->SaveAsText->clear();
+}
+
+VxLite::sbs space;
+bool fileDecompressed = false;
 
 // Compress selected file
 void MainWindow::onCompress()
@@ -161,71 +176,72 @@ void MainWindow::onCompress()
 
     QString temp = "";
 
-    //QFile file(filenameOpen);
+    // Path to vls file on-disk.
+    std::string path = filenameOpen.toStdString();
 
-    //if (!file.open(QIODevice::ReadWrite | QIODevice::Text))
-        //return;
+    std::cout << "test1" << std::endl;
+
+    // Create a vls_file from API call
+    VxLite::vls_file* file = VxLite::OpenFromFile(path);
+
+    std::cout << "test2" << std::endl;
 
 
-        // Path to vls file on-disk.
-        std::string path = filenameOpen.toStdString();
+    // Check that the file is open
+    if(file == nullptr)
+    {
+        std::cout<<"Fatal: Could not open file at path"<<std::endl;
+        return ;
+    }
 
-        // Create a vls_file from API call
-        VxLite::vls_file* file = VxLite::OpenFromFile(path);
+    const size_t raw_size = file->xs*file->ys*file->zs*file->bpv;
 
-        // Check that the file is open
-        if(file == nullptr)
-        {
-            std::cout<<"Fatal: Could not open file at path"<<std::endl;
-            return ;
-        }
+    temp.append("Loaded ");
+    temp.append(path.c_str());
+    ui->MainTextEdit->append(temp);
 
-        const size_t raw_size = file->xs*file->ys*file->zs*file->bpv;
+    temp.clear();
+    temp.append("Dimensions are ");
+    temp.append(QString::number(file->xs));
+    temp.append("x");
+    temp.append(QString::number(file->ys));
+    temp.append("x");
+    temp.append(QString::number(file->zs));
 
-        temp.append("Loaded ");
-        temp.append(path.c_str());
-        ui->MainTextEdit->append(temp);
+    ui->MainTextEdit->append(temp);
 
-        temp.clear();
-        temp.append("Dimensions are ");
-        temp.append(QString::number(file->xs));
-        temp.append("x");
-        temp.append(QString::number(file->ys));
-        temp.append("x");
-        temp.append(QString::number(file->zs));
+    temp.clear();
+    temp.append(QString::number(file->bpv));
+    temp.append(" bytes per voxel");
 
-        ui->MainTextEdit->append(temp);
+    ui->MainTextEdit->append(temp);
 
-        temp.clear();
-        temp.append(QString::number(file->bpv));
-        temp.append(" bytes per voxel");
-
-        ui->MainTextEdit->append(temp);
-
-        //std::cout<<"Loaded "<<path<<std::endl;
-        //std::cout<<"dimensions are "<<file->xs<<"x"<<file->ys<<"x"<<file->zs<<std::endl;
-        //std::cout<<file->bpv<<" bytes per voxel"<<std::endl;
+    ui->MainTextEdit->repaint();
 
     // Now, create a bytespace and a compression context for the data
-    VxLite::sbs space;
     VxLite::ctx context(&space);
 
     // Always unfilter after compressing, and filter again before compressing!!
     ui->MainTextEdit->append("Unfiltering bytespace...");
+    ui->MainTextEdit->repaint();
     context.UnfilterSpace();
 
     // Fix / optimize filters
-    //ui->MainTextEdit->append("Attempting filter optimization...");
-    //context.OptimizeFilters();
+    ui->MainTextEdit->append("Attempting filter optimization...");
+    ui->MainTextEdit->repaint();
+    context.OptimizeFilters();
 
     // Refilter for compression and writing
     ui->MainTextEdit->append("Re-filtering bytespace...");
+    ui->MainTextEdit->repaint();
     context.FilterSpace();
 
     ui->MainTextEdit->append("Compressing...");
+    ui->MainTextEdit->repaint();
     context.Compress(*file);
 
     ui->MainTextEdit->append("Writing to disk...");
+    ui->MainTextEdit->repaint();
     VxLite::SaveToFile(*file, "fixed.vls");
 
     // Cleanup
@@ -244,20 +260,20 @@ void MainWindow::onDecompress()
     // Create a vls_file from API call
     VxLite::vls_file* file = VxLite::OpenFromFile(path);
 
+    QString temp;
+
     // Check that the file is open
     if(file == nullptr)
     {
         std::cout<<"Fatal: Could not open file at path"<<std::endl;
+        temp.append("Fatal: Could not open file at path");
+        ui->MainTextEdit->append(temp);
         return ;
     }
-
-
-    QString temp;
 
     const size_t raw_size = file->xs*file->ys*file->zs*file->bpv;
 
     // Now, create a bytespace and a compression context for the data
-    VxLite::sbs space;
     VxLite::ctx context(&space);
 
     // Decompression API call
@@ -279,4 +295,50 @@ void MainWindow::onDecompress()
     context.UnfilterSpace();
 
     //VxLite::SaveToFile(*file, filenameSave.toStdString());
+
+    ui->MainTextEdit->append("Done!");
+    fileDecompressed = true;
+    delete file;
+}
+
+// Export SBS as PNG sequence
+void MainWindow::onExportPNGs()
+{
+  QString temp;
+
+  if(!fileDecompressed)
+  {
+    temp.append("No decompressed space!");
+    ui->MainTextEdit->append(temp);
+    return;
+  }
+  sf::Image in_img;
+  in_img.create(space.xs, space.ys);
+  std::string path = "seq_reconstructed/out-0.png";
+  int frame = 0;
+  for(size_t z = 0; z < space.zs; z++)
+  {
+    for(size_t y = 0; y < space.ys; y++)
+    {
+      for(size_t x = 0; x < space.xs; x++)
+      {
+        sf::Color c;
+        //sf::Color c = in_img.getPixel(x, y);
+        c.r = space.at(x, y, z, 0);
+        c.g = space.at(x, y, z, 1);
+        c.b = space.at(x, y, z, 2);
+        c.a = 255;
+        //s.at(x, y, z, 3) = c.a;
+        in_img.setPixel(x, y, c);
+      }
+    }
+    in_img.saveToFile(path);
+    frame++;
+    //path = (frame < 10) ? ("png_seq/out-0"+std::to_string(frame)+".png") : ("png_seq/out-"+std::to_string(frame)+".png");
+    path = "seq_out/out-"+std::to_string(frame)+".png";
+  }
+  temp.append("Exported ");
+  temp.append(QString::number(frame));
+  temp.append(" frames");
+  ui->MainTextEdit->append(temp);
 }

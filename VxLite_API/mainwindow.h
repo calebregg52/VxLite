@@ -36,9 +36,6 @@ signals:
 public slots:
     void onPrint(QString);
     void onClear();
-
-
-public slots:
     void on_actionVersion_triggered();
     void on_actionSource_triggered();
     void on_actionExit_triggered();
@@ -47,6 +44,8 @@ public slots:
     void on_actionSaveAs();
     void onCompress();
     void onDecompress();
+    void onExportPNGs();
+    void clearFiles();
 
 
 
