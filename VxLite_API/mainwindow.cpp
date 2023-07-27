@@ -159,47 +159,126 @@ void MainWindow::onCompress()
         return;
     }
 
-    QFile file(filenameOpen);
+    QString temp = "";
 
-    if (!file.open(QIODevice::ReadWrite | QIODevice::Text))
-        return;
+    //QFile file(filenameOpen);
 
-    //VxLite::vls_file* outfile = new VxLite::vls_file({0, 0, 0, 0, 0, 0, nullptr, nullptr})
+    //if (!file.open(QIODevice::ReadWrite | QIODevice::Text))
+        //return;
 
-    VxLite::vls_file *vls = VxLite::OpenFromFile(filenameOpen.toStdString());
+
+        // Path to vls file on-disk.
+        std::string path = filenameOpen.toStdString();
+
+        // Create a vls_file from API call
+        VxLite::vls_file* file = VxLite::OpenFromFile(path);
+
+        // Check that the file is open
+        if(file == nullptr)
+        {
+            std::cout<<"Fatal: Could not open file at path"<<std::endl;
+            return ;
+        }
+
+        const size_t raw_size = file->xs*file->ys*file->zs*file->bpv;
+
+        temp.append("Loaded ");
+        temp.append(path);
+        ui->MainTextEdit->append(temp);
+
+        temp.clear();
+        temp.append("Dimensions are ");
+        temp.append(QString::number(file->xs));
+        temp.append("x");
+        temp.append(QString::number(file->ys));
+        temp.append("x");
+        temp.append(QString::number(file->zs));
+
+        ui->MainTextEdit->append(temp);
+
+        temp.clear();
+        temp.append(QString::number(file->bpv));
+        temp.append(" bytes per voxel");
+
+        ui->MainTextEdit->append(temp);
+
+        //std::cout<<"Loaded "<<path<<std::endl;
+        //std::cout<<"dimensions are "<<file->xs<<"x"<<file->ys<<"x"<<file->zs<<std::endl;
+        //std::cout<<file->bpv<<" bytes per voxel"<<std::endl;
+
+    // Now, create a bytespace and a compression context for the data
+    VxLite::sbs space;
+    VxLite::ctx context(&space);
+
+    // Always unfilter after compressing, and filter again before compressing!!
+    ui->MainTextEdit->append("Unfiltering bytespace...");
+    context.UnfilterSpace();
+
+    // Fix / optimize filters
+    //ui->MainTextEdit->append("Attempting filter optimization...");
+    //context.OptimizeFilters();
+
+    // Refilter for compression and writing
+    ui->MainTextEdit->append("Re-filtering bytespace...");
+    context.FilterSpace();
 
     ui->MainTextEdit->append("Compressing...");
+    context.Compress(*file);
 
-    VxLite::SaveToFile(*vls, filenameSave.toStdString());
+    ui->MainTextEdit->append("Writing to disk...");
+    VxLite::SaveToFile(*file, "fixed.vls");
 
-
-    file.close();
+    // Cleanup
+    delete file;
+    ui->MainTextEdit->append("Done!");
 
 }
 
 // Decompress selected file
 void MainWindow::onDecompress()
 {
-    // Check if file is valid
-    if(filenameOpen.isEmpty())
+
+    // Path to vls file on-disk.
+    std::string path = filenameOpen.toStdString();
+
+    // Create a vls_file from API call
+    VxLite::vls_file* file = VxLite::OpenFromFile(path);
+
+    // Check that the file is open
+    if(file == nullptr)
     {
-        ui->MainTextEdit->append("No file name specified.");
-        return;
+        std::cout<<"Fatal: Could not open file at path"<<std::endl;
+        return ;
     }
 
-    QFile file(filenameSave);
 
-    if (!file.open(QIODevice::ReadWrite | QIODevice::Text))
-        return;
+    QString temp;
 
+    const size_t raw_size = file->xs*file->ys*file->zs*file->bpv;
 
-    VxLite::vls_file *vls = VxLite::OpenFromFile(filenameOpen.toStdString());
+    // Now, create a bytespace and a compression context for the data
+    VxLite::sbs space;
+    VxLite::ctx context(&space);
 
-    ui->MainTextEdit->append("Decompressing...");
+    // Decompression API call
+    temp.clear();
+    temp.append("Decompressing LZ4 data...");
+    ui->MainTextEdit->append(temp);
 
-    VxLite::SaveToFile(*vls, filenameSave.toStdString());
+    //std::cout<<"Decompressing LZ4 data..."<<std::endl;
+    context.Decompress(*file);
+    temp.clear();
+    temp.append("Decompressed ");
+    temp.append(QString::number(raw_size/(1024.f*1024.f)));
+    temp.append("MB");
+    ui->MainTextEdit->append(temp);
+    temp.clear();
 
-    file.close();
+    // Always unfilter after compressing, and filter again before compressing!!
+    std::cout<<"Unfiltering bytespace..."<<std::endl;
+    context.UnfilterSpace();
+
+    VxLite::SaveToFile(*file, filenameSave.toStdString());
 }
 
 
