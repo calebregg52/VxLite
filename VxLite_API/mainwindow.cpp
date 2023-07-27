@@ -183,7 +183,7 @@ void MainWindow::onCompress()
         const size_t raw_size = file->xs*file->ys*file->zs*file->bpv;
 
         temp.append("Loaded ");
-        temp.append(path);
+        temp.append(path.c_str());
         ui->MainTextEdit->append(temp);
 
         temp.clear();
@@ -278,10 +278,5 @@ void MainWindow::onDecompress()
     std::cout<<"Unfiltering bytespace..."<<std::endl;
     context.UnfilterSpace();
 
-    VxLite::SaveToFile(*file, filenameSave.toStdString());
+    //VxLite::SaveToFile(*file, filenameSave.toStdString());
 }
-
-
-
-
-

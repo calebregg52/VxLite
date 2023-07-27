@@ -87,42 +87,48 @@ namespace VxLite
     ret->xs = 0;
     for(int i = 0; i < 8; i++)
     {
-      ret->xs |= (uint64_t(buf[i]) << (i*8));
+      ret->xs <<= 8;
+      ret->xs |= (uint64_t(buf[7-i]) & 0xFF);
     }
 
     infile.read(buf, 8);
     ret->ys = 0;
     for(int i = 0; i < 8; i++)
     {
-      ret->ys |= (uint64_t(buf[i]) << (i*8));
+      ret->ys <<= 8;
+      ret->ys |= (uint64_t(buf[7-i]) & 0xFF);
     }
 
     infile.read(buf, 8);
     ret->zs = 0;
     for(int i = 0; i < 8; i++)
     {
-      ret->zs |= (uint64_t(buf[i]) << (i*8));
+      ret->zs <<= 8;
+      ret->zs |= (uint64_t(buf[7-i]) & 0xFF);
     }
 
     infile.read(buf, 8);
     ret->bpv = 0;
     for(int i = 0; i < 8; i++)
     {
-      ret->bpv |= (uint64_t(buf[i]) << (i*8));
+      ret->bpv <<= 8;
+      ret->bpv |= (uint64_t(buf[7-i]) & 0xFF);
     }
 
     infile.read(buf, 8);
     ret->CompressedFilterDataSize = 0;
     for(int i = 0; i < 8; i++)
     {
-      ret->CompressedFilterDataSize |= (uint64_t(buf[i]) << (i*8));
+      ret->CompressedFilterDataSize <<= 8;
+      ret->CompressedFilterDataSize |= (uint64_t(buf[7-i]) & 0xFF);
     }
 
     infile.read(buf, 8);
     ret->CompressedSpaceDataSize = 0;
     for(int i = 0; i < 8; i++)
     {
-      ret->CompressedSpaceDataSize |= (uint64_t(buf[i]) << (i*8));
+      ret->CompressedSpaceDataSize <<= 8;
+      ret->CompressedSpaceDataSize |= (uint64_t(buf[7-i]) & 0xFF);
     }
 
     ret->CompressedFilterData = new uint8_t[ret->CompressedFilterDataSize];
@@ -140,7 +146,7 @@ namespace VxLite
     std::ofstream outfile(filename, std::ofstream::out);
     if(!outfile.is_open()) return;
 
-    char* buf = new char[8];
+    char buf[8];
     for(int i = 0; i < 8; i++)
     {
       buf[i] = uint8_t(file.xs >> (i*8));
@@ -171,10 +177,12 @@ namespace VxLite
     }
     outfile.write(buf, 8);
 
+    uint64_t d = file.CompressedSpaceDataSize;
     for(int i = 0; i < 8; i++)
     {
       buf[i] = uint8_t(file.CompressedSpaceDataSize >> (i*8));
     }
+
     outfile.write(buf, 8);
 
     outfile.write((char*)file.CompressedFilterData, file.CompressedFilterDataSize);
