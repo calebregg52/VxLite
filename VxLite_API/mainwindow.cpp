@@ -4,7 +4,7 @@
 //#include "test.h"
 #include <VxLite.hpp>
 
-#include<QFile>
+#include <QFile>
 #include <QFileDialog>
 #include <QTextStream>
 #include <QMessageBox>
@@ -25,6 +25,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->CompressButton, &QPushButton::released, this, &MainWindow::onCompress);
     connect(ui->DecompressButton, &QPushButton::released, this, &MainWindow::onDecompress);
+
+
+    connect(ui->clearButton, &QPushButton::released, this, &MainWindow::clearFiles);
 
 
 
@@ -148,6 +151,14 @@ void MainWindow::on_actionSaveAs()
 }
 
 
+void MainWindow::clearFiles()
+{
+    filenameSave.clear();
+    ui->OpenFileText->clear();
+    filenameOpen.clear();
+    ui->SaveAsText->clear();
+}
+
 
 // Compress selected file
 void MainWindow::onCompress()
@@ -161,50 +172,45 @@ void MainWindow::onCompress()
 
     QString temp = "";
 
-    //QFile file(filenameOpen);
+    // Path to vls file on-disk.
+    std::string path = filenameOpen.toStdString();
 
-    //if (!file.open(QIODevice::ReadWrite | QIODevice::Text))
-        //return;
+    std::cout << "test1" << std::endl;
+
+    // Create a vls_file from API call
+    VxLite::vls_file* file = VxLite::OpenFromFile(path);
+
+    std::cout << "test2" << std::endl;
 
 
-        // Path to vls file on-disk.
-        std::string path = filenameOpen.toStdString();
+    // Check that the file is open
+    if(file == nullptr)
+    {
+        std::cout<<"Fatal: Could not open file at path"<<std::endl;
+        return ;
+    }
 
-        // Create a vls_file from API call
-        VxLite::vls_file* file = VxLite::OpenFromFile(path);
+    const size_t raw_size = file->xs*file->ys*file->zs*file->bpv;
 
-        // Check that the file is open
-        if(file == nullptr)
-        {
-            std::cout<<"Fatal: Could not open file at path"<<std::endl;
-            return ;
-        }
+    temp.append("Loaded ");
+    temp.append(path);
+    ui->MainTextEdit->append(temp);
 
-        const size_t raw_size = file->xs*file->ys*file->zs*file->bpv;
+    temp.clear();
+    temp.append("Dimensions are ");
+    temp.append(QString::number(file->xs));
+    temp.append("x");
+    temp.append(QString::number(file->ys));
+    temp.append("x");
+    temp.append(QString::number(file->zs));
 
-        temp.append("Loaded ");
-        temp.append(path);
-        ui->MainTextEdit->append(temp);
+    ui->MainTextEdit->append(temp);
 
-        temp.clear();
-        temp.append("Dimensions are ");
-        temp.append(QString::number(file->xs));
-        temp.append("x");
-        temp.append(QString::number(file->ys));
-        temp.append("x");
-        temp.append(QString::number(file->zs));
+    temp.clear();
+    temp.append(QString::number(file->bpv));
+    temp.append(" bytes per voxel");
 
-        ui->MainTextEdit->append(temp);
-
-        temp.clear();
-        temp.append(QString::number(file->bpv));
-        temp.append(" bytes per voxel");
-
-        ui->MainTextEdit->append(temp);
-
-        //std::cout<<"Loaded "<<path<<std::endl;
-        //std::cout<<"dimensions are "<<file->xs<<"x"<<file->ys<<"x"<<file->zs<<std::endl;
-        //std::cout<<file->bpv<<" bytes per voxel"<<std::endl;
+    ui->MainTextEdit->append(temp);
 
     // Now, create a bytespace and a compression context for the data
     VxLite::sbs space;
@@ -278,10 +284,9 @@ void MainWindow::onDecompress()
     std::cout<<"Unfiltering bytespace..."<<std::endl;
     context.UnfilterSpace();
 
-    VxLite::SaveToFile(*file, filenameSave.toStdString());
+    //VxLite::SaveToFile(*file, filenameSave.toStdString());
+
+    ui->MainTextEdit->append("Done!");
+
+    delete file;
 }
-
-
-
-
-
